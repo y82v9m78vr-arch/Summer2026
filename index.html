@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Daniel's Summer Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#1a1208; --bg2:#221a0e; --bg3:#2e2010;
+  --card:#2a1e0f; --card2:#332516;
+  --amber:#e8930a; --amber2:#f5a623; --amber-dim:#c47a08;
+  --warm:#d4691e; --red:#c0392b;
+  --green:#5a8a4a; --green2:#6faa5a;
+  --muted:#7a6248; --text:#f0dfc0; --text2:#c8aa80; --text3:#8a7260;
+  --border:#3e2e18; --radius:14px; --radius-sm:8px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html { height:100%; overflow:hidden; }
+body { height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; max-width:430px; margin:0 auto; overflow-x:hidden; }
+.header { background:var(--bg2); border-bottom:1px solid var(--border); padding:18px 20px 14px; position:sticky; top:0; z-index:100; }
+.header-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+.app-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:900; color:var(--amber2); letter-spacing:-0.5px; line-height:1; }
+.date-badge { background:var(--bg3); border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:12px; color:var(--text2); font-weight:500; }
+.weight-strip { display:flex; gap:16px; margin-top:10px; }
+.w-stat { font-size:11px; color:var(--text3); font-weight:500; text-transform:uppercase; letter-spacing:0.5px; }
+.w-stat span { color:var(--amber); font-weight:600; font-size:13px; }
+.tabs { display:flex; background:var(--bg2); border-bottom:2px solid var(--border); position:sticky; top:96px; z-index:99; }
+.tab { flex:1; padding:12px 4px; text-align:center; font-size:11px; font-weight:600; color:var(--text3); cursor:pointer; border:none; background:none; text-transform:uppercase; letter-spacing:0.5px; position:relative; }
+.tab.active { color:var(--amber2); }
+.tab.active::after { content:''; position:absolute; bottom:-2px; left:10%; width:80%; height:2px; background:var(--amber2); border-radius:2px; }
+.tab-icon { display:block; font-size:16px; margin-bottom:2px; }
+.content { padding:16px; padding-bottom:40px; }
+.section { margin-bottom:20px; }
+.section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin-bottom:10px; padding-left:2px; }
+.week-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.week-label { font-family:'Playfair Display',serif; font-size:16px; font-weight:700; color:var(--text); }
+.nav-btn { background:var(--card2); border:1px solid var(--border); border-radius:8px; color:var(--text2); padding:6px 14px; font-size:16px; cursor:pointer; line-height:1; }
+.habit-grid { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.grid-header { display:grid; grid-template-columns:1fr repeat(7,36px); background:var(--bg3); border-bottom:1px solid var(--border); padding:8px 10px; align-items:center; }
+.day-head { text-align:center; font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; }
+.day-head.today-col { color:var(--amber); }
+.habit-row { display:grid; grid-template-columns:1fr repeat(7,36px); padding:7px 10px; border-bottom:1px solid var(--border); align-items:center; }
+.habit-row:last-child { border-bottom:none; }
+.habit-name { font-size:13px; font-weight:500; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:6px; }
+.check-cell { display:flex; align-items:center; justify-content:center; }
+.check-btn { width:28px; height:28px; border-radius:7px; border:none; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; }
+.check-btn.inactive { background:var(--bg3); color:var(--text3); opacity:0.3; cursor:default; }
+.check-btn.unchecked { background:var(--bg3); border:1.5px solid var(--border); color:transparent; }
+.check-btn.checked { background:var(--green); color:#fff; box-shadow:0 0 8px rgba(90,138,74,0.4); }
+.check-btn.today-cell.unchecked { border-color:var(--amber-dim); }
+.progress-card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); padding:14px 16px; margin-bottom:14px; }
+.progress-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+.progress-title { font-size:13px; font-weight:600; color:var(--text2); }
+.progress-pct { font-size:20px; font-weight:700; color:var(--amber2); font-family:'Playfair Display',serif; }
+.bar-track { height:10px; background:var(--bg3); border-radius:999px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--amber-dim),var(--amber2)); }
+.bar-fill.green-bar { background:linear-gradient(90deg,var(--green),var(--green2)); }
+.progress-sub { font-size:11px; color:var(--text3); margin-top:6px; }
+.weekly-targets { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.weekly-item { display:flex; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); cursor:pointer; gap:12px; }
+.weekly-item:last-child { border-bottom:none; }
+.weekly-icon { font-size:20px; width:28px; text-align:center; }
+.weekly-name { flex:1; font-size:14px; font-weight:500; color:var(--text2); }
+.weekly-check { width:32px; height:32px; border-radius:9px; border:1.5px solid var(--border); background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:16px; color:transparent; }
+.weekly-check.done { background:var(--amber); border-color:var(--amber); color:var(--bg); box-shadow:0 0 10px rgba(232,147,10,0.3); }
+.schedule-list { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.schedule-item { padding:13px 16px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px; }
+.schedule-item:last-child { border-bottom:none; }
+.sched-icon { font-size:18px; width:26px; text-align:center; margin-top:1px; }
+.sched-info { flex:1; }
+.sched-name { font-size:14px; font-weight:600; color:var(--text); }
+.sched-days { font-size:11px; color:var(--amber); font-weight:500; margin-top:2px; }
+.sched-note { font-size:11px; color:var(--text3); margin-top:2px; }
+.supp-card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.supp-time { background:var(--bg3); border-bottom:1px solid var(--border); padding:8px 16px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--amber-dim); }
+.supp-item { padding:10px 16px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text2); display:flex; align-items:center; gap:8px; }
+.supp-item:last-child { border-bottom:none; }
+.supp-item::before { content:'•'; color:var(--amber-dim); font-size:18px; line-height:0; }
+.skin-card { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; }
+.skin-time { background:var(--bg3); border-bottom:1px solid var(--border); padding:8px 16px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--warm); }
+.skin-item { padding:10px 16px; border-bottom:1px solid var(--border); font-size:13px; color:var(--text2); display:flex; align-items:center; gap:8px; }
+.skin-item:last-child { border-bottom:none; }
+.skin-item::before { content:'◆'; color:var(--warm); font-size:8px; flex-shrink:0; }
+.timeline-wrap { position:relative; }
+.timeline-line { position:absolute; left:22px; top:0; bottom:0; width:2px; background:linear-gradient(180deg,var(--amber),var(--border)); z-index:0; }
+.phase-item { position:relative; z-index:1; display:flex; gap:14px; margin-bottom:14px; }
+.phase-dot { width:44px; height:44px; border-radius:50%; border:2px solid var(--border); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; position:relative; z-index:2; }
+.phase-dot.active { border-color:var(--amber); background:var(--bg3); box-shadow:0 0 12px rgba(232,147,10,0.25); }
+.phase-dot.past { opacity:0.5; }
+.phase-dot.future { opacity:0.6; }
+.phase-card { flex:1; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; margin-top:4px; }
+.phase-card.active { border-color:var(--amber-dim); background:var(--card2); }
+.phase-name { font-size:14px; font-weight:700; color:var(--text); margin-bottom:2px; }
+.phase-dates { font-size:11px; color:var(--amber); font-weight:500; margin-bottom:6px; }
+.phase-desc { font-size:12px; color:var(--text3); line-height:1.5; }
+.phase-badge { display:inline-block; background:var(--amber); color:var(--bg); font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:1px; border-radius:4px; padding:2px 7px; margin-bottom:6px; }
+.weight-hero { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px 16px; text-align:center; margin-bottom:14px; }
+.weight-current { font-family:'Playfair Display',serif; font-size:56px; font-weight:900; color:var(--amber2); line-height:1; }
+.weight-unit { font-size:20px; color:var(--muted); font-weight:400; }
+.weight-sub { font-size:12px; color:var(--text3); margin-top:4px; }
+.milestones { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+.milestone { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; }
+.milestone-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.milestone-name { font-size:13px; font-weight:600; color:var(--text2); }
+.milestone-target { font-size:13px; color:var(--amber); font-weight:700; }
+.log-input-row { display:flex; gap:8px; margin-bottom:12px; }
+.weight-input { flex:1; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; color:var(--text); font-size:16px; font-family:'DM Sans',sans-serif; outline:none; }
+.weight-input:focus { border-color:var(--amber-dim); }
+.log-btn { background:var(--amber); border:none; border-radius:var(--radius-sm); padding:12px 18px; color:var(--bg); font-size:15px; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.log-list { background:var(--card); border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; max-height:280px; overflow-y:auto; }
+.log-entry { display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-bottom:1px solid var(--border); }
+.log-entry:last-child { border-bottom:none; }
+.log-date { font-size:12px; color:var(--text3); }
+.log-weight { font-size:16px; font-weight:700; color:var(--text); }
+.log-delta { font-size:12px; font-weight:600; }
+.log-delta.down { color:var(--green2); }
+.log-delta.up { color:var(--red); }
+.log-delta.same { color:var(--text3); }
+.log-delete { background:none; border:none; color:var(--text3); font-size:16px; padding:4px 8px; cursor:pointer; margin-left:4px; }
+.empty-state { text-align:center; padding:30px; color:var(--text3); font-size:13px; }
+.today-bar { background:linear-gradient(135deg,var(--card2),var(--bg3)); border:1px solid var(--amber-dim); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; display:flex; align-items:center; gap:14px; }
+.today-circle { width:52px; height:52px; border-radius:50%; background:var(--bg); border:2px solid var(--amber-dim); display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+.today-pct-num { font-size:18px; font-weight:800; color:var(--amber2); font-family:'Playfair Display',serif; line-height:1; }
+.today-pct-label { font-size:8px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+.today-right { flex:1; }
+.today-greeting { font-size:15px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.today-remaining { font-size:12px; color:var(--text3); }
+.today-remaining strong { color:var(--amber); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="app-title">Summer '26</div>
+    <div class="date-badge" id="dateBadge">-</div>
+  </div>
+  <div class="weight-strip">
+    <div class="w-stat">Current <span id="hdrCurrent">220</span> lbs</div>
+    <div class="w-stat">Goal (Aug 9) <span>209</span> lbs</div>
+    <div class="w-stat">Ultimate <span>185</span> lbs</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('week',this)"><span class="tab-icon">📅</span>Week</button>
+  <button class="tab" onclick="switchTab('habits',this)"><span class="tab-icon">✅</span>Habits</button>
+  <button class="tab" onclick="switchTab('timeline',this)"><span class="tab-icon">🗓</span>Timeline</button>
+  <button class="tab" onclick="switchTab('weight',this)"><span class="tab-icon">⚖️</span>Weight</button>
+</div>
+
+<div class="content">
+
+  <div id="tab-week" class="tab-content active">
+    <div class="today-bar">
+      <div class="today-circle">
+        <div class="today-pct-num" id="todayPctNum">0%</div>
+        <div class="today-pct-label">today</div>
+      </div>
+      <div class="today-right">
+        <div class="today-greeting" id="todayGreeting">Good morning, Daniel</div>
+        <div class="today-remaining" id="todayRemaining">Loading...</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="week-nav">
+        <button class="nav-btn" onclick="shiftWeek(-1)">&#8249;</button>
+        <div class="week-label" id="weekLabel">-</div>
+        <button class="nav-btn" onclick="shiftWeek(1)">&#8250;</button>
+      </div>
+      <div class="habit-grid">
+        <div class="grid-header" id="gridHeader"><div></div></div>
+        <div id="habitRows"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">Weekly Targets</div>
+      <div class="weekly-targets" id="weeklyTargets"></div>
+    </div>
+    <div class="section">
+      <div class="section-label">Summer Progress</div>
+      <div class="progress-card">
+        <div class="progress-top">
+          <div class="progress-title">June 22 to Aug 9</div>
+          <div class="progress-pct" id="summerPct">0%</div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="summerBar" style="width:0%"></div></div>
+        <div class="progress-sub" id="summerSub">- days elapsed</div>
+      </div>
+      <div class="progress-card">
+        <div class="progress-top">
+          <div class="progress-title">Weight Goal (220 to 209)</div>
+          <div class="progress-pct" id="weightGoalPct">0%</div>
+        </div>
+        <div class="bar-track"><div class="bar-fill green-bar" id="weightGoalBar" style="width:0%"></div></div>
+        <div class="progress-sub" id="weightGoalSub">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-habits" class="tab-content">
+    <div class="section">
+      <div class="section-label">Daily Schedule</div>
+      <div class="schedule-list" id="scheduleList"></div>
+    </div>
+    <div class="section">
+      <div class="section-label">Supplements</div>
+      <div class="supp-card">
+        <div class="supp-time">Morning (with breakfast)</div>
+        <div class="supp-item">Men's Multivitamin</div>
+        <div class="supp-item">Omega-3 / Fish Oil - 1,000mg EPA/DHA</div>
+        <div class="supp-item">TUDCA - 500mg</div>
+        <div class="supp-item">Finasteride</div>
+        <div class="supp-item">PrEP</div>
+        <div class="supp-time">Evening (with dinner)</div>
+        <div class="supp-item">TUDCA - 500mg</div>
+        <div class="supp-item">Magnesium Glycinate - 300-400mg</div>
+        <div class="supp-item">Sertraline</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-label">Skincare Routine</div>
+      <div class="skin-card">
+        <div class="skin-time">Morning</div>
+        <div class="skin-item">Cetaphil Cleanser</div>
+        <div class="skin-item">Vitamin C Serum</div>
+        <div class="skin-item">Paula's Choice Moisturizer / SPF</div>
+        <div class="skin-item">Hero Sunscreen (before midday sun)</div>
+        <div class="skin-time">Evening</div>
+        <div class="skin-item">Cetaphil Cleanser</div>
+        <div class="skin-item">Paula's Choice Retinol - 3x/week (face, neck, backs of hands)</div>
+        <div class="skin-item">Paula's Choice Nightly Reconditioning Moisturizer</div>
+        <div class="skin-item" style="color:var(--text3);font-style:italic;font-size:12px;">Non-retinol nights: cleanse and moisturize only</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-timeline" class="tab-content">
+    <div class="section">
+      <div class="section-label">Summer 2026 Phases</div>
+      <div class="timeline-wrap">
+        <div class="timeline-line"></div>
+        <div id="timelineItems"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-weight" class="tab-content">
+    <div class="weight-hero">
+      <div class="weight-current" id="weightDisplay">220 <span class="weight-unit">lbs</span></div>
+      <div class="weight-sub" id="weightHeroSub">Loading...</div>
+    </div>
+    <div class="section">
+      <div class="section-label">Milestones</div>
+      <div class="milestones" id="milestones"></div>
+    </div>
+    <div class="section">
+      <div class="section-label">Log Weight</div>
+      <div class="log-input-row">
+        <input type="number" class="weight-input" id="weightInputField" placeholder="Enter weight (lbs)" step="0.1">
+        <button class="log-btn" onclick="logWeight()">Log</button>
+      </div>
+      <div class="section-label">History</div>
+      <div class="log-list" id="weightLog"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var START_WEIGHT = 220;
+var AUG_GOAL = 209;
+var ULTIMATE_GOAL = 185;
+var SUMMER_START = new Date(2026, 5, 22);
+var SUMMER_END = new Date(2026, 7, 9);
+
+var SPECIAL_WEEK_SUN = new Date(2026, 5, 8);
+var SPECIAL_WEEK_SAT = new Date(2026, 5, 14);
+
+var HABITS = [
+  { name: "Lift", icon: "🏋️", normalDays: [1,3,5], specialDays: [2,4,6] },
+  { name: "Walk", icon: "🚶", normalDays: [0,1,2,3,4,5,6], specialDays: null },
+  { name: "Skincare", icon: "✨", normalDays: [0,1,2,3,4,5,6], specialDays: null },
+  { name: "Supplements", icon: "💊", normalDays: [0,1,2,3,4,5,6], specialDays: null },
+  { name: "Water 80oz+", icon: "💧", normalDays: [0,1,2,3,4,5,6], specialDays: null },
+  { name: "Log Food", icon: "📝", normalDays: [0,1,2,3,4,5,6], specialDays: null },
+  { name: "Online Class", icon: "💻", normalDays: [0,1,2,3,4,5,6], specialDays: null },
+  { name: "15 Min Tidy", icon: "🧹", normalDays: [0,1,2,3,4,5,6], specialDays: null },
+  { name: "AP Gov", icon: "📚", normalDays: [2,4], specialDays: null }
+];
+
+var WEEKLY_TARGETS = [
+  { name: "Hang Out In-Town", icon: "😊" },
+  { name: "Watch Current Player", icon: "⚾" },
+  { name: "Dad's Team Game", icon: "👨" },
+  { name: "Sunday Reset", icon: "🔄" },
+  { name: "Budget Check-in", icon: "💰" }
+];
+
+var SCHEDULE_INFO = [
+  { icon:"🏋️", name:"Lift", days:"Mon / Wed / Fri (this week: Tue / Thu / Sat)", note:"StrongLifts hybrid A/B/C - deload 20% while rebuilding" },
+  { icon:"🚶", name:"Walk", days:"Every day", note:"AM walk - anchor habit, non-negotiable" },
+  { icon:"✨", name:"Skincare", days:"Every day", note:"AM + PM routine (see reference below)" },
+  { icon:"💊", name:"Supplements", days:"Every day", note:"AM stack with breakfast, PM stack with dinner" },
+  { icon:"💧", name:"Water 80oz+", days:"Every day", note:"Track throughout day" },
+  { icon:"📝", name:"Log Food", days:"Every day", note:"Every meal - no excuses" },
+  { icon:"💻", name:"Online Class", days:"Every day", note:"Grad school / professional development" },
+  { icon:"🧹", name:"15 Min Tidy", days:"Every day", note:"One focused room or task" },
+  { icon:"📚", name:"AP Gov Prep", days:"Tue / Thu", note:"Curriculum block - exam prep + course design" }
+];
+
+var PHASES = [
+  {
+    icon: "🌅",
+    name: "Ignition",
+    dates: "June 9-16",
+    start: new Date(2026,5,9),
+    end: new Date(2026,5,16),
+    desc: "First week fully on. Reunion just wrapped, baseline locked. Build the rhythm before you leave town."
+  },
+  {
+    icon: "🤠",
+    name: "Central Texas",
+    dates: "June 17-21",
+    start: new Date(2026,5,17),
+    end: new Date(2026,5,21),
+    desc: "Hill country trip. Portable habits only. Walk daily, hit water goals, stay off the rails with food. Come back ready."
+  },
+  {
+    icon: "📈",
+    name: "Momentum",
+    dates: "June 22 - July 13",
+    start: new Date(2026,5,22),
+    end: new Date(2026,6,13),
+    desc: "Longest stretch of the summer. Three full weeks at home, no travel, no excuses. This is where the weight moves and the habits cement."
+  },
+  {
+    icon: "📖",
+    name: "AP Training",
+    dates: "July 14-17",
+    start: new Date(2026,6,14),
+    end: new Date(2026,6,17),
+    desc: "AP Gov professional development in Houston. Local - full routine stays intact. Treat it like a school week, not a disruption."
+  },
+  {
+    icon: "🏁",
+    name: "Final Push",
+    dates: "July 18 - Aug 8",
+    start: new Date(2026,6,18),
+    end: new Date(2026,7,8),
+    desc: "Last three weeks before school. Lock in the weight. Lock in the curriculum. Every habit should feel automatic by now."
+  },
+  {
+    icon: "🎯",
+    name: "Back to Work",
+    dates: "August 9",
+    start: new Date(2026,7,9),
+    end: new Date(2026,7,9),
+    desc: "Two months done. The Sunday before school starts. 209 lbs. Routines on autopilot. Show up ready."
+  }
+];
+
+var state = {
+  checks: {},
+  weekly: {},
+  weightLog: [],
+  currentWeight: START_WEIGHT,
+  weekOffset: 0
+};
+
+function saveState() {
+  try {
+    localStorage.setItem('summerTracker2026v3', JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    var saved = localStorage.getItem('summerTracker2026v3');
+    if (saved) {
+      var parsed = JSON.parse(saved);
+      state.checks = parsed.checks || {};
+      state.weekly = parsed.weekly || {};
+      state.weightLog = parsed.weightLog || [];
+      state.currentWeight = parsed.currentWeight || START_WEIGHT;
+      state.weekOffset = 0;
+    }
+  } catch(e) {}
+}
+
+function getToday() {
+  return new Date();
+}
+
+function pad(n) {
+  return n < 10 ? '0' + n : '' + n;
+}
+
+function dateKey(d) {
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function getSundayOfWeek(d) {
+  var day = d.getDay();
+  var sun = new Date(d);
+  sun.setDate(d.getDate() - day);
+  sun.setHours(0, 0, 0, 0);
+  return sun;
+}
+
+function getWeekKey(d) {
+  var sun = getSundayOfWeek(d);
+  return dateKey(sun);
+}
+
+function isSpecialLiftWeek(d) {
+  var t = new Date(d);
+  t.setHours(0, 0, 0, 0);
+  var s = new Date(SPECIAL_WEEK_SUN);
+  s.setHours(0, 0, 0, 0);
+  var e = new Date(SPECIAL_WEEK_SAT);
+  e.setHours(0, 0, 0, 0);
+  return t >= s && t <= e;
+}
+
+function getActiveDays(habit, date) {
+  if (habit.specialDays && isSpecialLiftWeek(date)) {
+    return habit.specialDays;
+  }
+  return habit.normalDays;
+}
+
+function isBeforeStart(d) {
+  var t = new Date(d);
+  t.setHours(0, 0, 0, 0);
+  var s = new Date(SUMMER_START);
+  s.setHours(0, 0, 0, 0);
+  return t < s;
+}
+
+var DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+var DAY_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function switchTab(name, btn) {
+  var tabs = document.querySelectorAll('.tab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.remove('active');
+  }
+  btn.classList.add('active');
+  var contents = document.querySelectorAll('.tab-content');
+  for (var j = 0; j < contents.length; j++) {
+    contents[j].classList.remove('active');
+  }
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'week') { renderWeek(); }
+  if (name === 'weight') { renderWeight(); }
+}
+
+function renderWeek() {
+  renderTodayBar();
+  renderGrid();
+  renderWeeklyTargets();
+  renderSummerProgress();
+}
+
+function renderTodayBar() {
+  var now = getToday();
+  var hour = now.getHours();
+  var greeting = 'Good evening';
+  if (hour < 12) { greeting = 'Good morning'; }
+  else if (hour < 17) { greeting = 'Good afternoon'; }
+  document.getElementById('todayGreeting').innerHTML = greeting + ', Daniel';
+
+  var dKey = dateKey(now);
+  var todayDow = now.getDay();
+  var total = 0;
+  var done = 0;
+
+  if (!isBeforeStart(now)) {
+    for (var i = 0; i < HABITS.length; i++) {
+      var h = HABITS[i];
+      var activeDays = getActiveDays(h, now);
+      var active = false;
+      for (var d = 0; d < activeDays.length; d++) {
+        if (activeDays[d] === todayDow) {
+          active = true;
+          break;
+        }
+      }
+      if (active) {
+        total++;
+        if (state.checks[dKey + '_' + i]) {
+          done++;
+        }
+      }
+    }
+  }
+
+  var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  document.getElementById('todayPctNum').innerHTML = pct + '%';
+  var rem = total - done;
+  if (total === 0) {
+    document.getElementById('todayRemaining').innerHTML = 'Tracker starts June 22';
+  } else if (rem === 0) {
+    document.getElementById('todayRemaining').innerHTML = 'All habits done today!';
+  } else {
+    document.getElementById('todayRemaining').innerHTML = '<strong>' + rem + '</strong> habit' + (rem > 1 ? 's' : '') + ' remaining today';
+  }
+
+  document.getElementById('dateBadge').innerHTML = DAY_FULL[now.getDay()] + ', ' + MONTH_NAMES[now.getMonth()] + ' ' + now.getDate();
+}
+
+function renderGrid() {
+  var today = getToday();
+  var baseSunday = getSundayOfWeek(today);
+  var sun = new Date(baseSunday);
+  sun.setDate(sun.getDate() + state.weekOffset * 7);
+
+  var sat = new Date(sun);
+  sat.setDate(sun.getDate() + 6);
+  document.getElementById('weekLabel').innerHTML = MONTH_NAMES[sun.getMonth()] + ' ' + sun.getDate() + ' - ' + MONTH_NAMES[sat.getMonth()] + ' ' + sat.getDate();
+
+  var dates = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(sun);
+    d.setDate(sun.getDate() + i);
+    dates.push(d);
+  }
+
+  var todayKey = dateKey(today);
+
+  var hdr = document.getElementById('gridHeader');
+  hdr.innerHTML = '<div></div>';
+  for (var j = 0; j < dates.length; j++) {
+    var dk = dateKey(dates[j]);
+    var isToday = (dk === todayKey);
+    var div = document.createElement('div');
+    div.className = isToday ? 'day-head today-col' : 'day-head';
+    div.innerHTML = DAY_NAMES[dates[j].getDay()];
+    hdr.appendChild(div);
+  }
+
+  var rowsEl = document.getElementById('habitRows');
+  rowsEl.innerHTML = '';
+
+  for (var h = 0; h < HABITS.length; h++) {
+    var habit = HABITS[h];
+    var row = document.createElement('div');
+    row.className = 'habit-row';
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'habit-name';
+    nameEl.innerHTML = habit.icon + ' ' + habit.name;
+    row.appendChild(nameEl);
+
+    for (var d2 = 0; d2 < dates.length; d2++) {
+      var date = dates[d2];
+      var dow = date.getDay();
+      var activeDays2 = getActiveDays(habit, date);
+      var isActive = false;
+      for (var k = 0; k < activeDays2.length; k++) {
+        if (activeDays2[k] === dow) {
+          isActive = true;
+          break;
+        }
+      }
+
+      var beforeStart = isBeforeStart(date);
+      var cellKey = dateKey(date) + '_' + h;
+      var isChecked = !!state.checks[cellKey];
+      var isTodayCell = (dateKey(date) === todayKey);
+
+      var cell = document.createElement('div');
+      cell.className = 'check-cell';
+      var btn = document.createElement('button');
+
+      if (!isActive || beforeStart) {
+        btn.className = 'check-btn inactive';
+        btn.innerHTML = '·';
+        btn.disabled = true;
+      } else if (isChecked) {
+        btn.className = isTodayCell ? 'check-btn checked today-cell' : 'check-btn checked';
+        btn.innerHTML = '✓';
+        (function(ck) {
+          btn.onclick = function() { toggleCheck(ck); };
+        })(cellKey);
+      } else {
+        btn.className = isTodayCell ? 'check-btn unchecked today-cell' : 'check-btn unchecked';
+        btn.innerHTML = '';
+        (function(ck) {
+          btn.onclick = function() { toggleCheck(ck); };
+        })(cellKey);
+      }
+
+      cell.appendChild(btn);
+      row.appendChild(cell);
+    }
+    rowsEl.appendChild(row);
+  }
+}
+
+function toggleCheck(key) {
+  if (state.checks[key]) {
+    delete state.checks[key];
+  } else {
+    state.checks[key] = true;
+  }
+  saveState();
+  renderWeek();
+}
+
+function shiftWeek(dir) {
+  state.weekOffset += dir;
+  renderGrid();
+}
+
+function renderWeeklyTargets() {
+  var today = getToday();
+  var wk = getWeekKey(today);
+  var el = document.getElementById('weeklyTargets');
+  el.innerHTML = '';
+  for (var i = 0; i < WEEKLY_TARGETS.length; i++) {
+    (function(idx) {
+      var t = WEEKLY_TARGETS[idx];
+      var tKey = wk + '_' + idx;
+      var done = !!state.weekly[tKey];
+      var item = document.createElement('div');
+      item.className = 'weekly-item';
+      var icon = document.createElement('div');
+      icon.className = 'weekly-icon';
+      icon.innerHTML = t.icon;
+      var name = document.createElement('div');
+      name.className = 'weekly-name';
+      name.innerHTML = t.name;
+      var chk = document.createElement('div');
+      chk.className = done ? 'weekly-check done' : 'weekly-check';
+      chk.innerHTML = done ? '✓' : '';
+      item.appendChild(icon);
+      item.appendChild(name);
+      item.appendChild(chk);
+      item.onclick = function() { toggleWeekly(tKey); };
+      el.appendChild(item);
+    })(i);
+  }
+}
+
+function toggleWeekly(key) {
+  if (state.weekly[key]) {
+    delete state.weekly[key];
+  } else {
+    state.weekly[key] = true;
+  }
+  saveState();
+  renderWeeklyTargets();
+}
+
+function renderSummerProgress() {
+  var now = getToday();
+  var totalMs = SUMMER_END - SUMMER_START;
+  var elapsedMs = Math.max(0, Math.min(now - SUMMER_START, totalMs));
+  var pct = Math.round((elapsedMs / totalMs) * 100);
+  var days = Math.round(elapsedMs / 86400000);
+  var totalDays = Math.round(totalMs / 86400000);
+  document.getElementById('summerPct').innerHTML = pct + '%';
+  document.getElementById('summerBar').style.width = pct + '%';
+  document.getElementById('summerSub').innerHTML = days + ' of ' + totalDays + ' days elapsed';
+
+  var cur = state.currentWeight;
+  var needed = START_WEIGHT - AUG_GOAL;
+  var lost = Math.max(0, START_WEIGHT - cur);
+  var wpct = Math.min(100, Math.round((lost / needed) * 100));
+  document.getElementById('weightGoalPct').innerHTML = wpct + '%';
+  document.getElementById('weightGoalBar').style.width = wpct + '%';
+  var remaining = cur - AUG_GOAL;
+  if (remaining > 0) {
+    document.getElementById('weightGoalSub').innerHTML = lost.toFixed(1) + ' lbs lost - ' + remaining.toFixed(1) + ' lbs to go by Aug 9';
+  } else {
+    document.getElementById('weightGoalSub').innerHTML = 'August 9 goal reached!';
+  }
+}
+
+function renderHabitsTab() {
+  var list = document.getElementById('scheduleList');
+  list.innerHTML = '';
+  for (var i = 0; i < SCHEDULE_INFO.length; i++) {
+    var s = SCHEDULE_INFO[i];
+    var item = document.createElement('div');
+    item.className = 'schedule-item';
+    item.innerHTML = '<div class="sched-icon">' + s.icon + '</div><div class="sched-info"><div class="sched-name">' + s.name + '</div><div class="sched-days">' + s.days + '</div><div class="sched-note">' + s.note + '</div></div>';
+    list.appendChild(item);
+  }
+}
+
+function renderTimeline() {
+  var today = getToday();
+  var el = document.getElementById('timelineItems');
+  el.innerHTML = '';
+  for (var i = 0; i < PHASES.length; i++) {
+    var p = PHASES[i];
+    var isActive = today >= p.start && today <= p.end;
+    var isPast = today > p.end;
+    var item = document.createElement('div');
+    item.className = 'phase-item';
+    var dot = document.createElement('div');
+    if (isActive) { dot.className = 'phase-dot active'; }
+    else if (isPast) { dot.className = 'phase-dot past'; }
+    else { dot.className = 'phase-dot future'; }
+    dot.innerHTML = p.icon;
+    var card = document.createElement('div');
+    card.className = isActive ? 'phase-card active' : 'phase-card';
+    var badgeHTML = isActive ? '<div class="phase-badge">Active Now</div>' : '';
+    card.innerHTML = badgeHTML + '<div class="phase-name">' + p.name + '</div><div class="phase-dates">' + p.dates + '</div><div class="phase-desc">' + p.desc + '</div>';
+    item.appendChild(dot);
+    item.appendChild(card);
+    el.appendChild(item);
+  }
+}
+
+function renderWeight() {
+  var cur = state.currentWeight;
+  document.getElementById('weightDisplay').innerHTML = cur + ' <span class="weight-unit">lbs</span>';
+  document.getElementById('hdrCurrent').innerHTML = cur;
+  var toAug = cur - AUG_GOAL;
+  var toUlt = cur - ULTIMATE_GOAL;
+  if (toAug <= 0) {
+    document.getElementById('weightHeroSub').innerHTML = 'Aug 9 goal crushed! ' + Math.abs(toUlt).toFixed(1) + ' lbs to ultimate goal';
+  } else {
+    document.getElementById('weightHeroSub').innerHTML = toAug.toFixed(1) + ' lbs to Aug 9 goal - ' + toUlt.toFixed(1) + ' lbs to ultimate';
+  }
+
+  var milestoneData = [
+    { label: 'Milestone 1 - Under 215', target: 214.9, start: START_WEIGHT },
+    { label: 'Aug 9 Goal - 209 lbs', target: 209, start: START_WEIGHT },
+    { label: 'Ultimate Goal - 185 lbs', target: 185, start: START_WEIGHT }
+  ];
+  var mEl = document.getElementById('milestones');
+  mEl.innerHTML = '';
+  for (var i = 0; i < milestoneData.length; i++) {
+    var m = milestoneData[i];
+    var needed2 = m.start - m.target;
+    var lost2 = Math.max(0, m.start - cur);
+    var pct2 = Math.min(100, Math.round((lost2 / needed2) * 100));
+    var reached = cur <= m.target;
+    var div = document.createElement('div');
+    div.className = 'milestone';
+    div.innerHTML = '<div class="milestone-top"><div class="milestone-name">' + (reached ? '✅ ' : '') + m.label + '</div><div class="milestone-target">' + pct2 + '%</div></div><div class="bar-track"><div class="bar-fill green-bar" style="width:' + pct2 + '%"></div></div>';
+    mEl.appendChild(div);
+  }
+  renderWeightLog();
+}
+
+function renderWeightLog() {
+  var el = document.getElementById('weightLog');
+  el.innerHTML = '';
+  if (state.weightLog.length === 0) {
+    el.innerHTML = '<div class="empty-state">No entries yet. Log your first weight above.</div>';
+    return;
+  }
+  var sorted = state.weightLog.slice().sort(function(a, b) {
+    return b.date.localeCompare(a.date);
+  });
+  for (var i = 0; i < sorted.length; i++) {
+    (function(idx, entry) {
+      var prev = null;
+      for (var j = idx + 1; j < sorted.length; j++) {
+        if (sorted[j].date < entry.date) {
+          prev = sorted[j];
+          break;
+        }
+      }
+      var delta = '';
+      var deltaClass = 'same';
+      if (prev) {
+        var diff = entry.weight - prev.weight;
+        if (diff < 0) {
+          delta = 'v ' + Math.abs(diff).toFixed(1);
+          deltaClass = 'down';
+        } else if (diff > 0) {
+          delta = '^ ' + diff.toFixed(1);
+          deltaClass = 'up';
+        } else {
+          delta = '-';
+          deltaClass = 'same';
+        }
+      }
+      var row = document.createElement('div');
+      row.className = 'log-entry';
+      row.innerHTML = '<div class="log-date">' + entry.date + '</div><div class="log-weight">' + entry.weight + ' lbs</div><div class="log-delta ' + deltaClass + '">' + delta + '</div>';
+      var del = document.createElement('button');
+      del.className = 'log-delete';
+      del.innerHTML = 'x';
+      del.onclick = function() { deleteWeightEntry(entry.date); };
+      row.appendChild(del);
+      el.appendChild(row);
+    })(i, sorted[i]);
+  }
+}
+
+function logWeight() {
+  var input = document.getElementById('weightInputField');
+  var val = parseFloat(input.value);
+  if (isNaN(val) || val < 100 || val > 400) {
+    alert('Please enter a valid weight between 100 and 400 lbs.');
+    return;
+  }
+  var today = dateKey(getToday());
+  var found = false;
+  for (var i = 0; i < state.weightLog.length; i++) {
+    if (state.weightLog[i].date === today) {
+      state.weightLog[i].weight = val;
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    state.weightLog.push({ date: today, weight: val });
+  }
+  state.currentWeight = val;
+  input.value = '';
+  saveState();
+  renderWeight();
+  renderSummerProgress();
+  document.getElementById('hdrCurrent').innerHTML = val;
+}
+
+function deleteWeightEntry(date) {
+  var newLog = [];
+  for (var i = 0; i < state.weightLog.length; i++) {
+    if (state.weightLog[i].date !== date) {
+      newLog.push(state.weightLog[i]);
+    }
+  }
+  state.weightLog = newLog;
+  if (state.weightLog.length > 0) {
+    var sorted = state.weightLog.slice().sort(function(a, b) {
+      return b.date.localeCompare(a.date);
+    });
+    state.currentWeight = sorted[0].weight;
+  } else {
+    state.currentWeight = START_WEIGHT;
+  }
+  saveState();
+  renderWeight();
+  renderSummerProgress();
+  document.getElementById('hdrCurrent').innerHTML = state.currentWeight;
+}
+
+function init() {
+  loadState();
+  renderHabitsTab();
+  renderTimeline();
+  renderWeek();
+}
+
+init();
+</script>
+</body>
+</html>
